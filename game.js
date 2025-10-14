@@ -17,6 +17,8 @@ const winnerText = document.getElementById('winnerText');
 const playAgainButton = document.getElementById('playAgainButton');
 const musicToggle = document.getElementById('musicToggle');
 const soundToggle = document.getElementById('soundToggle');
+const joystick = document.getElementById('joystick');
+const joystickKnob = document.getElementById('joystickKnob');
 
 // Variables del juego
 let gameRunning = false;
@@ -29,6 +31,11 @@ let musicEnabled = true;
 let soundEnabled = true;
 let backgroundMusic = null;
 let musicGainNode = null;
+
+// Variables del Joystick
+let joystickActive = false;
+let joystickCenterY = 0;
+const joystickMaxDistance = 35; // Máxima distancia del centro
 
 // Puntuaciones
 let playerScore = 0;
@@ -437,35 +444,42 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-// Control táctil para dispositivos móviles
-const touchSpeedMultiplier = 2; // Multiplicador de velocidad para control táctil
-
-canvas.addEventListener('touchstart', handleTouch, { passive: false });
-canvas.addEventListener('touchmove', handleTouch, { passive: false });
-canvas.addEventListener('touchend', () => {
-    player.dy = 0;
+// Control del Joystick Virtual
+joystickKnob.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    joystickActive = true;
+    const rect = joystickKnob.getBoundingClientRect();
+    joystickCenterY = rect.top + rect.height / 2;
 }, { passive: false });
 
-function handleTouch(e) {
+document.addEventListener('touchmove', (e) => {
+    if (!joystickActive) return;
     e.preventDefault();
-    if (!gameRunning) return;
     
     const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    const touchY = touch.clientY - rect.top;
+    const deltaY = touch.clientY - joystickCenterY;
     
-    // Mover la paleta hacia la posición del toque con velocidad aumentada
-    const targetY = touchY - player.height / 2;
-    const distance = Math.abs(targetY - player.y);
+    // Limitar el movimiento del knob
+    const limitedDeltaY = Math.max(-joystickMaxDistance, Math.min(joystickMaxDistance, deltaY));
     
-    if (targetY < player.y - 10) {
-        player.dy = -player.speed * touchSpeedMultiplier;
-    } else if (targetY > player.y + 10) {
-        player.dy = player.speed * touchSpeedMultiplier;
-    } else {
-        player.dy = 0;
+    // Mover visualmente el knob
+    joystickKnob.style.transform = `translateY(${limitedDeltaY}px)`;
+    
+    // Controlar la paleta del jugador solo si el juego está corriendo
+    if (gameRunning) {
+        const speedFactor = limitedDeltaY / joystickMaxDistance; // -1 a 1
+        player.dy = speedFactor * player.speed * 2; // Multiplicar por 2 para más velocidad
     }
-}
+    
+}, { passive: false });
+
+document.addEventListener('touchend', () => {
+    if (!joystickActive) return;
+    
+    joystickActive = false;
+    joystickKnob.style.transform = 'translateY(0)';
+    player.dy = 0;
+});
 
 // Botones
 startButton.addEventListener('click', () => {
