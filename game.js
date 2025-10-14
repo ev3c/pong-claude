@@ -19,6 +19,7 @@ const musicToggle = document.getElementById('musicToggle');
 const soundToggle = document.getElementById('soundToggle');
 const touchSlider = document.getElementById('touchSlider');
 const sliderKnob = document.getElementById('sliderKnob');
+const levelNumber = document.getElementById('levelNumber');
 
 // Variables del juego
 let gameRunning = false;
@@ -44,7 +45,11 @@ let isSliderActive = false;
 // Puntuaciones
 let playerScore = 0;
 let computerScore = 0;
-const winningScore = 10;
+const winningScore = 5;
+
+// Sistema de niveles
+let currentLevel = 1;
+let computerBaseSpeed = 3; // Velocidad inicial más lenta
 
 // Paleta del jugador (ahora a la derecha)
 const player = {
@@ -62,7 +67,7 @@ const computer = {
     y: canvas.height / 2 - 35,
     width: 10,
     height: 70,
-    speed: 5
+    speed: 3 // Velocidad inicial baja
 };
 
 // Pelota
@@ -368,10 +373,18 @@ function updateScore() {
 function checkWinner() {
     if (playerScore >= winningScore) {
         playWin();
-        endGame('¡Felicidades! ¡Has ganado!', '🎉 Eres el campeón del Pong 🎉');
+        currentLevel++;
+        levelNumber.textContent = currentLevel;
+        const newSpeed = Math.min(computerBaseSpeed + (currentLevel - 1) * 0.5, 7);
+        computer.speed = newSpeed;
+        
+        endGame(
+            `¡Nivel ${currentLevel - 1} Completado!`, 
+            `🎉 ¡Pasas al Nivel ${currentLevel}! La computadora será más rápida 🚀`
+        );
     } else if (computerScore >= winningScore) {
         playLose();
-        endGame('¡Juego Terminado!', '😔 La computadora ha ganado. ¡Inténtalo de nuevo!');
+        endGame('¡Juego Terminado!', `😔 Perdiste en el Nivel ${currentLevel}. ¡Inténtalo de nuevo!`);
     }
 }
 
@@ -420,7 +433,7 @@ function pauseGame() {
     stopBackgroundMusic();
 }
 
-// Reiniciar juego
+// Reiniciar juego (reinicia todo, incluyendo nivel)
 function resetGame() {
     gameRunning = false;
     cancelAnimationFrame(animationId);
@@ -428,6 +441,9 @@ function resetGame() {
     
     playerScore = 0;
     computerScore = 0;
+    currentLevel = 1;
+    levelNumber.textContent = currentLevel;
+    computer.speed = computerBaseSpeed;
     updateScore();
     
     player.y = canvas.height / 2 - 35;
@@ -567,7 +583,13 @@ resetButton.addEventListener('click', resetGame);
 
 playAgainButton.addEventListener('click', () => {
     gameOverModal.classList.remove('active');
-    resetGame();
+    // Solo reiniciar puntos, mantener nivel
+    playerScore = 0;
+    computerScore = 0;
+    updateScore();
+    player.y = canvas.height / 2 - 35;
+    computer.y = canvas.height / 2 - 35;
+    resetBall();
     startGame();
 });
 
