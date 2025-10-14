@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong - Juego Clásico</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PONG</h1>
+            <p class="subtitle">Juego Clásico</p>
+        </div>
+        
+        <div class="game-container">
+            <div class="score-board">
+                <div class="player-score">
+                    <span class="label">Jugador</span>
+                    <span id="playerScore" class="score">0</span>
+                </div>
+                <div class="computer-score">
+                    <span class="label">Computadora</span>
+                    <span id="computerScore" class="score">0</span>
+                </div>
+            </div>
+            
+            <canvas id="pongCanvas"></canvas>
+            
+            <div class="controls">
+                <button id="startButton" class="btn">Iniciar Juego</button>
+                <button id="resetButton" class="btn btn-secondary">Reiniciar</button>
+            </div>
+            
+            <div class="instructions">
+                <h3>Controles:</h3>
+                <p>⌨️ <strong>Teclado:</strong> Usa las teclas ↑ y ↓</p>
+                <p>📱 <strong>Móvil:</strong> Toca la pantalla arriba o abajo</p>
+                <p>🎯 <strong>Objetivo:</strong> ¡Llega a 10 puntos para ganar!</p>
+            </div>
+        </div>
+        
+        <div id="gameOverModal" class="modal">
+            <div class="modal-content">
+                <h2 id="gameOverText">¡Juego Terminado!</h2>
+                <p id="winnerText"></p>
+                <button id="playAgainButton" class="btn">Jugar de Nuevo</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
+
