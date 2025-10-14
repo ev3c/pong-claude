@@ -438,6 +438,8 @@ document.addEventListener('keyup', (e) => {
 });
 
 // Control táctil para dispositivos móviles
+const touchSpeedMultiplier = 2; // Multiplicador de velocidad para control táctil
+
 canvas.addEventListener('touchstart', handleTouch, { passive: false });
 canvas.addEventListener('touchmove', handleTouch, { passive: false });
 canvas.addEventListener('touchend', () => {
@@ -452,13 +454,14 @@ function handleTouch(e) {
     const rect = canvas.getBoundingClientRect();
     const touchY = touch.clientY - rect.top;
     
-    // Mover la paleta hacia la posición del toque
+    // Mover la paleta hacia la posición del toque con velocidad aumentada
     const targetY = touchY - player.height / 2;
+    const distance = Math.abs(targetY - player.y);
     
     if (targetY < player.y - 10) {
-        player.dy = -player.speed;
+        player.dy = -player.speed * touchSpeedMultiplier;
     } else if (targetY > player.y + 10) {
-        player.dy = player.speed;
+        player.dy = player.speed * touchSpeedMultiplier;
     } else {
         player.dy = 0;
     }
