@@ -15,11 +15,20 @@ const gameOverModal = document.getElementById('gameOverModal');
 const gameOverText = document.getElementById('gameOverText');
 const winnerText = document.getElementById('winnerText');
 const playAgainButton = document.getElementById('playAgainButton');
+const musicToggle = document.getElementById('musicToggle');
+const soundToggle = document.getElementById('soundToggle');
 
 // Variables del juego
 let gameRunning = false;
 let animationId;
 let mouseY = canvas.height / 2;
+
+// Sistema de Audio
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let musicEnabled = true;
+let soundEnabled = true;
+let backgroundMusic = null;
+let musicGainNode = null;
 
 // Puntuaciones
 let playerScore = 0;
@@ -54,6 +63,90 @@ const ball = {
     dx: 5,
     dy: 5
 };
+
+// Funciones de Audio
+function playSound(frequency, duration, type = 'sine') {
+    if (!soundEnabled) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = frequency;
+    oscillator.type = type;
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+function playPaddleHit() {
+    playSound(440, 0.1, 'square');
+}
+
+function playWallHit() {
+    playSound(220, 0.1, 'sine');
+}
+
+function playScore() {
+    playSound(330, 0.2, 'triangle');
+}
+
+function playWin() {
+    playSound(523, 0.3, 'sine');
+    setTimeout(() => playSound(659, 0.3, 'sine'), 150);
+    setTimeout(() => playSound(784, 0.4, 'sine'), 300);
+}
+
+function playLose() {
+    playSound(392, 0.3, 'sawtooth');
+    setTimeout(() => playSound(330, 0.3, 'sawtooth'), 150);
+    setTimeout(() => playSound(262, 0.4, 'sawtooth'), 300);
+}
+
+function startBackgroundMusic() {
+    if (!musicEnabled || backgroundMusic) return;
+    
+    musicGainNode = audioContext.createGain();
+    musicGainNode.gain.value = 0.1;
+    musicGainNode.connect(audioContext.destination);
+    
+    // Crear una melodía de fondo simple
+    const notes = [262, 294, 330, 349, 392, 440, 494, 523]; // Do, Re, Mi, Fa, Sol, La, Si, Do
+    let noteIndex = 0;
+    
+    function playNextNote() {
+        if (!musicEnabled) return;
+        
+        const oscillator = audioContext.createOscillator();
+        oscillator.connect(musicGainNode);
+        oscillator.frequency.value = notes[noteIndex % notes.length];
+        oscillator.type = 'triangle';
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+        
+        noteIndex++;
+        backgroundMusic = setTimeout(playNextNote, 400);
+    }
+    
+    playNextNote();
+}
+
+function stopBackgroundMusic() {
+    if (backgroundMusic) {
+        clearTimeout(backgroundMusic);
+        backgroundMusic = null;
+    }
+    if (musicGainNode) {
+        musicGainNode.disconnect();
+        musicGainNode = null;
+    }
+}
 
 // Dibujar rectángulo con bordes redondeados
 function drawRoundedRect(x, y, width, height, radius) {
@@ -167,6 +260,7 @@ function moveBall() {
     // Rebote en paredes superior e inferior
     if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
         ball.dy *= -1;
+        playWallHit();
     }
     
     // Colisión con la paleta del jugador
@@ -184,6 +278,8 @@ function moveBall() {
         // Aumentar ligeramente la velocidad
         ball.speed *= 1.05;
         ball.dx = ball.speed * Math.cos(angle);
+        
+        playPaddleHit();
     }
     
     // Colisión con la paleta de la computadora
@@ -201,6 +297,8 @@ function moveBall() {
         // Aumentar ligeramente la velocidad
         ball.speed *= 1.05;
         ball.dx = -ball.speed * Math.cos(angle);
+        
+        playPaddleHit();
     }
     
     // Punto para la computadora
@@ -208,6 +306,7 @@ function moveBall() {
         computerScore++;
         updateScore();
         resetBall();
+        playScore();
         checkWinner();
     }
     
@@ -216,6 +315,7 @@ function moveBall() {
         playerScore++;
         updateScore();
         resetBall();
+        playScore();
         checkWinner();
     }
 }
@@ -238,8 +338,10 @@ function updateScore() {
 // Verificar ganador
 function checkWinner() {
     if (playerScore >= winningScore) {
+        playWin();
         endGame('¡Felicidades! ¡Has ganado!', '🎉 Eres el campeón del Pong 🎉');
     } else if (computerScore >= winningScore) {
+        playLose();
         endGame('¡Juego Terminado!', '😔 La computadora ha ganado. ¡Inténtalo de nuevo!');
     }
 }
@@ -248,6 +350,7 @@ function checkWinner() {
 function endGame(title, message) {
     gameRunning = false;
     cancelAnimationFrame(animationId);
+    stopBackgroundMusic();
     gameOverText.textContent = title;
     winnerText.textContent = message;
     gameOverModal.classList.add('active');
@@ -269,8 +372,14 @@ function gameLoop() {
 function startGame() {
     if (gameRunning) return;
     
+    // Reanudar el contexto de audio si está suspendido
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    
     gameRunning = true;
     startButton.textContent = 'Pausar';
+    startBackgroundMusic();
     gameLoop();
 }
 
@@ -279,12 +388,14 @@ function pauseGame() {
     gameRunning = false;
     cancelAnimationFrame(animationId);
     startButton.textContent = 'Reanudar';
+    stopBackgroundMusic();
 }
 
 // Reiniciar juego
 function resetGame() {
     gameRunning = false;
     cancelAnimationFrame(animationId);
+    stopBackgroundMusic();
     
     playerScore = 0;
     computerScore = 0;
@@ -368,6 +479,25 @@ playAgainButton.addEventListener('click', () => {
     gameOverModal.classList.remove('active');
     resetGame();
     startGame();
+});
+
+// Controles de audio
+musicToggle.addEventListener('click', () => {
+    musicEnabled = !musicEnabled;
+    musicToggle.textContent = musicEnabled ? '🎵' : '🔇';
+    musicToggle.setAttribute('title', musicEnabled ? 'Desactivar música' : 'Activar música');
+    
+    if (!musicEnabled) {
+        stopBackgroundMusic();
+    } else if (gameRunning) {
+        startBackgroundMusic();
+    }
+});
+
+soundToggle.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+    soundToggle.setAttribute('title', soundEnabled ? 'Desactivar efectos' : 'Activar efectos');
 });
 
 // Dibujar estado inicial
