@@ -25,7 +25,14 @@
                 </div>
             </div>
             
-            <canvas id="pongCanvas"></canvas>
+            <div class="canvas-wrapper">
+                <canvas id="pongCanvas"></canvas>
+                
+                <!-- Barra de desplazamiento para móviles -->
+                <div id="touchSlider" class="touch-slider">
+                    <div id="sliderKnob" class="slider-knob"></div>
+                </div>
+            </div>
             
             <div class="controls">
                 <button id="startButton" class="btn">Iniciar Juego</button>
@@ -40,7 +47,7 @@
             <div class="instructions">
                 <h3>Controles:</h3>
                 <p>⌨️ <strong>Teclado:</strong> Usa las teclas ↑ y ↓</p>
-                <p>📱 <strong>Móvil:</strong> Toca y arrastra tu dedo sobre la pista para mover la barra verde</p>
+                <p>📱 <strong>Móvil:</strong> Usa la barra de desplazamiento verde en el lado derecho de la pista</p>
                 <p>🎵 <strong>Audio:</strong> Música de fondo y efectos de sonido activados</p>
                 <p>🎯 <strong>Objetivo:</strong> ¡Llega a 10 puntos para ganar!</p>
             </div>

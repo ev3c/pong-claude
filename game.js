@@ -17,6 +17,8 @@ const winnerText = document.getElementById('winnerText');
 const playAgainButton = document.getElementById('playAgainButton');
 const musicToggle = document.getElementById('musicToggle');
 const soundToggle = document.getElementById('soundToggle');
+const touchSlider = document.getElementById('touchSlider');
+const sliderKnob = document.getElementById('sliderKnob');
 
 // Variables del juego
 let gameRunning = false;
@@ -35,6 +37,9 @@ let isTouching = false;
 let touchStartY = 0;
 let playerStartY = 0;
 const touchSensitivity = 2; // Multiplicador de sensibilidad (mayor = más sensible)
+
+// Variables del slider
+let isSliderActive = false;
 
 // Puntuaciones
 let playerScore = 0;
@@ -236,6 +241,24 @@ function movePlayer() {
     if (player.y + player.height > canvas.height) {
         player.y = canvas.height - player.height;
     }
+    
+    // Actualizar posición del slider knob
+    updateSliderPosition();
+}
+
+// Actualizar posición visual del slider knob
+function updateSliderPosition() {
+    if (!touchSlider) return;
+    
+    const sliderHeight = touchSlider.offsetHeight;
+    const knobHeight = sliderKnob.offsetHeight;
+    const maxY = sliderHeight - knobHeight;
+    
+    // Calcular posición del knob basada en la posición del jugador
+    const playerPercent = player.y / (canvas.height - player.height);
+    const knobY = playerPercent * maxY;
+    
+    sliderKnob.style.top = knobY + 'px';
 }
 
 // IA de la computadora
@@ -489,6 +512,48 @@ canvas.addEventListener('touchend', (e) => {
     player.dy = 0;
 }, { passive: false });
 
+// Control del slider táctil
+sliderKnob.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!gameRunning) return;
+    
+    isSliderActive = true;
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+    if (!isSliderActive || !gameRunning) return;
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const sliderRect = touchSlider.getBoundingClientRect();
+    const touchY = touch.clientY - sliderRect.top;
+    
+    // Calcular posición del jugador basada en la posición del toque en el slider
+    const sliderHeight = touchSlider.offsetHeight;
+    const knobHeight = sliderKnob.offsetHeight;
+    const maxY = sliderHeight - knobHeight;
+    
+    // Limitar touchY dentro del slider
+    const clampedY = Math.max(0, Math.min(touchY - knobHeight / 2, maxY));
+    
+    // Calcular posición del jugador
+    const percent = clampedY / maxY;
+    player.y = percent * (canvas.height - player.height);
+    
+    // Limitar al canvas
+    if (player.y < 0) player.y = 0;
+    if (player.y + player.height > canvas.height) {
+        player.y = canvas.height - player.height;
+    }
+    
+    updateSliderPosition();
+}, { passive: false });
+
+document.addEventListener('touchend', () => {
+    isSliderActive = false;
+});
+
 // Botones
 startButton.addEventListener('click', () => {
     if (gameRunning) {
@@ -527,4 +592,5 @@ soundToggle.addEventListener('click', () => {
 
 // Dibujar estado inicial
 draw();
+updateSliderPosition();
 
