@@ -10,8 +10,6 @@
     <div class="container">
         <div class="header">
             <h1>PONG</h1>
-            <p class="subtitle">Juego Clásico</p>
-            <p class="level-indicator">Nivel <span id="levelNumber">1</span></p>
         </div>
         
         <div class="game-container">
@@ -20,13 +18,17 @@
                     <span class="label">Computadora</span>
                     <span id="computerScore" class="score">0</span>
                 </div>
+                <div class="level-score">
+                    <span class="label">Nivel</span>
+                    <span id="levelNumber" class="score level-number">1</span>
+                </div>
                 <div class="player-score">
                     <span class="label">Jugador</span>
                     <span id="playerScore" class="score">0</span>
                 </div>
             </div>
             
-            <div class="canvas-wrapper">
+            <div class="game-area">
                 <canvas id="pongCanvas"></canvas>
                 
                 <!-- Barra de desplazamiento para móviles -->
@@ -48,7 +50,7 @@
             <div class="instructions">
                 <h3>Controles:</h3>
                 <p>⌨️ <strong>Teclado:</strong> Usa las teclas ↑ y ↓</p>
-                <p>📱 <strong>Móvil:</strong> Usa la barra de desplazamiento verde en el lado derecho de la pista</p>
+                <p>🕹️ <strong>Móvil:</strong> Usa la barra de control al lado derecho de la pista</p>
                 <p>🎵 <strong>Audio:</strong> Música de fondo y efectos de sonido activados</p>
                 <p>🎯 <strong>Objetivo:</strong> ¡Llega a 5 puntos para ganar y subir de nivel!</p>
             </div>
