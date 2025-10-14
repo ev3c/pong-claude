@@ -51,6 +51,17 @@ const winningScore = 5;
 let currentLevel = 1;
 let computerBaseSpeed = 3; // Velocidad inicial más lenta
 
+// Detectar si es dispositivo táctil (smartphone/tablet)
+const isTouchDevice = () => {
+    return (('ontouchstart' in window) ||
+           (navigator.maxTouchPoints > 0) ||
+           (navigator.msMaxTouchPoints > 0));
+};
+
+// Variables para errores de la computadora en móviles
+let computerErrorChance = 0.3; // 30% de probabilidad de error inicial en móviles
+let computerReactionDelay = 0;
+
 // Paleta del jugador (ahora a la derecha)
 const player = {
     x: canvas.width - 20,
@@ -268,13 +279,41 @@ function updateSliderPosition() {
 
 // IA de la computadora
 function moveComputer() {
-    // La computadora sigue la pelota
     const computerCenter = computer.y + computer.height / 2;
     
-    if (computerCenter < ball.y - 35) {
-        computer.y += computer.speed;
-    } else if (computerCenter > ball.y + 35) {
-        computer.y -= computer.speed;
+    // En móviles, agregar errores y retrasos según el nivel
+    if (isTouchDevice()) {
+        // Calcular probabilidad de error basada en el nivel (disminuye al subir)
+        computerErrorChance = Math.max(0.05, 0.3 - (currentLevel - 1) * 0.05);
+        
+        // Agregar un margen de error aleatorio
+        const errorMargin = Math.random() < computerErrorChance ? 
+            (Math.random() - 0.5) * 100 : 0; // Error de hasta ±50 píxeles
+        
+        // Zona muerta más grande en niveles bajos (la computadora reacciona peor)
+        const deadZone = Math.max(20, 50 - (currentLevel - 1) * 5);
+        
+        // A veces la computadora "se distrae" y no sigue la pelota
+        if (Math.random() < computerErrorChance / 2) {
+            // No mover (error/distracción)
+            return;
+        }
+        
+        // Seguir la pelota con el error y zona muerta
+        const targetY = ball.y + errorMargin;
+        
+        if (computerCenter < targetY - deadZone) {
+            computer.y += computer.speed;
+        } else if (computerCenter > targetY + deadZone) {
+            computer.y -= computer.speed;
+        }
+    } else {
+        // En desktop, juego normal sin errores
+        if (computerCenter < ball.y - 35) {
+            computer.y += computer.speed;
+        } else if (computerCenter > ball.y + 35) {
+            computer.y -= computer.speed;
+        }
     }
     
     // Límites de la pantalla
@@ -378,9 +417,16 @@ function checkWinner() {
         const newSpeed = Math.min(computerBaseSpeed + (currentLevel - 1) * 0.5, 7);
         computer.speed = newSpeed;
         
+        let message = `🎉 ¡Pasas al Nivel ${currentLevel}! `;
+        if (isTouchDevice()) {
+            message += 'La computadora será más rápida y cometerá menos errores 🚀';
+        } else {
+            message += 'La computadora será más rápida 🚀';
+        }
+        
         endGame(
             `¡Nivel ${currentLevel - 1} Completado!`, 
-            `🎉 ¡Pasas al Nivel ${currentLevel}! La computadora será más rápida 🚀`
+            message
         );
     } else if (computerScore >= winningScore) {
         playLose();
@@ -444,6 +490,12 @@ function resetGame() {
     currentLevel = 1;
     levelNumber.textContent = currentLevel;
     computer.speed = computerBaseSpeed;
+    
+    // Reiniciar errores de la computadora en móviles
+    if (isTouchDevice()) {
+        computerErrorChance = 0.3; // Volver a 30% de error inicial
+    }
+    
     updateScore();
     
     player.y = canvas.height / 2 - 35;
