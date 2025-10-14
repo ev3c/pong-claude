@@ -17,8 +17,6 @@ const winnerText = document.getElementById('winnerText');
 const playAgainButton = document.getElementById('playAgainButton');
 const musicToggle = document.getElementById('musicToggle');
 const soundToggle = document.getElementById('soundToggle');
-const joystick = document.getElementById('joystick');
-const joystickKnob = document.getElementById('joystickKnob');
 
 // Variables del juego
 let gameRunning = false;
@@ -32,19 +30,18 @@ let soundEnabled = true;
 let backgroundMusic = null;
 let musicGainNode = null;
 
-// Variables del Joystick
-let joystickActive = false;
-let joystickCenterY = 0;
-const joystickMaxDistance = 35; // Máxima distancia del centro
+// Variables del control táctil
+let isTouching = false;
+let touchStartY = 0;
 
 // Puntuaciones
 let playerScore = 0;
 let computerScore = 0;
 const winningScore = 10;
 
-// Paleta del jugador
+// Paleta del jugador (ahora a la derecha)
 const player = {
-    x: 10,
+    x: canvas.width - 20,
     y: canvas.height / 2 - 35,
     width: 10,
     height: 70,
@@ -52,9 +49,9 @@ const player = {
     dy: 0
 };
 
-// Paleta de la computadora
+// Paleta de la computadora (ahora a la izquierda)
 const computer = {
-    x: canvas.width - 20,
+    x: 10,
     y: canvas.height / 2 - 35,
     width: 10,
     height: 70,
@@ -270,33 +267,14 @@ function moveBall() {
         playWallHit();
     }
     
-    // Colisión con la paleta del jugador
-    if (ball.x - ball.radius < player.x + player.width &&
+    // Colisión con la paleta del jugador (ahora a la derecha)
+    if (ball.x + ball.radius > player.x &&
         ball.y > player.y &&
         ball.y < player.y + player.height) {
         
         // Calcular ángulo de rebote basado en dónde golpeó la paleta
         const hitPos = (ball.y - player.y) / player.height;
         const angle = (hitPos - 0.5) * Math.PI / 3; // Máximo 60 grados
-        
-        ball.dx = Math.abs(ball.dx);
-        ball.dy = ball.speed * Math.sin(angle);
-        
-        // Aumentar ligeramente la velocidad
-        ball.speed *= 1.05;
-        ball.dx = ball.speed * Math.cos(angle);
-        
-        playPaddleHit();
-    }
-    
-    // Colisión con la paleta de la computadora
-    if (ball.x + ball.radius > computer.x &&
-        ball.y > computer.y &&
-        ball.y < computer.y + computer.height) {
-        
-        // Calcular ángulo de rebote
-        const hitPos = (ball.y - computer.y) / computer.height;
-        const angle = (hitPos - 0.5) * Math.PI / 3;
         
         ball.dx = -Math.abs(ball.dx);
         ball.dy = ball.speed * Math.sin(angle);
@@ -308,18 +286,37 @@ function moveBall() {
         playPaddleHit();
     }
     
-    // Punto para la computadora
+    // Colisión con la paleta de la computadora (ahora a la izquierda)
+    if (ball.x - ball.radius < computer.x + computer.width &&
+        ball.y > computer.y &&
+        ball.y < computer.y + computer.height) {
+        
+        // Calcular ángulo de rebote
+        const hitPos = (ball.y - computer.y) / computer.height;
+        const angle = (hitPos - 0.5) * Math.PI / 3;
+        
+        ball.dx = Math.abs(ball.dx);
+        ball.dy = ball.speed * Math.sin(angle);
+        
+        // Aumentar ligeramente la velocidad
+        ball.speed *= 1.05;
+        ball.dx = ball.speed * Math.cos(angle);
+        
+        playPaddleHit();
+    }
+    
+    // Punto para el jugador (la pelota salió por la izquierda)
     if (ball.x - ball.radius < 0) {
-        computerScore++;
+        playerScore++;
         updateScore();
         resetBall();
         playScore();
         checkWinner();
     }
     
-    // Punto para el jugador
+    // Punto para la computadora (la pelota salió por la derecha)
     if (ball.x + ball.radius > canvas.width) {
-        playerScore++;
+        computerScore++;
         updateScore();
         resetBall();
         playScore();
@@ -444,42 +441,57 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-// Control del Joystick Virtual
-joystickKnob.addEventListener('touchstart', (e) => {
+// Control táctil directo sobre el canvas (toda la pantalla)
+canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    joystickActive = true;
-    const rect = joystickKnob.getBoundingClientRect();
-    joystickCenterY = rect.top + rect.height / 2;
-}, { passive: false });
-
-document.addEventListener('touchmove', (e) => {
-    if (!joystickActive) return;
-    e.preventDefault();
+    if (!gameRunning) return;
     
     const touch = e.touches[0];
-    const deltaY = touch.clientY - joystickCenterY;
+    const rect = canvas.getBoundingClientRect();
+    const touchY = touch.clientY - rect.top;
     
-    // Limitar el movimiento del knob
-    const limitedDeltaY = Math.max(-joystickMaxDistance, Math.min(joystickMaxDistance, deltaY));
+    isTouching = true;
+    touchStartY = touchY;
+    // Mover la barra inmediatamente al tocar
+    player.y = touchY - player.height / 2;
     
-    // Mover visualmente el knob
-    joystickKnob.style.transform = `translateY(${limitedDeltaY}px)`;
-    
-    // Controlar la paleta del jugador solo si el juego está corriendo
-    if (gameRunning) {
-        const speedFactor = limitedDeltaY / joystickMaxDistance; // -1 a 1
-        player.dy = speedFactor * player.speed * 2; // Multiplicar por 2 para más velocidad
+    // Limitar a los bordes del canvas
+    if (player.y < 0) {
+        player.y = 0;
     }
-    
+    if (player.y + player.height > canvas.height) {
+        player.y = canvas.height - player.height;
+    }
 }, { passive: false });
 
-document.addEventListener('touchend', () => {
-    if (!joystickActive) return;
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (!isTouching || !gameRunning) return;
     
-    joystickActive = false;
-    joystickKnob.style.transform = 'translateY(0)';
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const touchY = touch.clientY - rect.top;
+    
+    // Mover la barra directamente a la posición del dedo
+    player.y = touchY - player.height / 2;
+    
+    // Limitar a los bordes del canvas
+    if (player.y < 0) {
+        player.y = 0;
+    }
+    if (player.y + player.height > canvas.height) {
+        player.y = canvas.height - player.height;
+    }
+    
+    // Actualizar touchStartY para el siguiente frame
+    touchStartY = touchY;
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    isTouching = false;
     player.dy = 0;
-});
+}, { passive: false });
 
 // Botones
 startButton.addEventListener('click', () => {
