@@ -33,6 +33,8 @@ let musicGainNode = null;
 // Variables del control táctil
 let isTouching = false;
 let touchStartY = 0;
+let playerStartY = 0;
+const touchSensitivity = 2; // Multiplicador de sensibilidad (mayor = más sensible)
 
 // Puntuaciones
 let playerScore = 0;
@@ -441,7 +443,7 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-// Control táctil directo sobre el canvas (toda la pantalla)
+// Control táctil directo sobre el canvas (toda la pantalla con sensibilidad amplificada)
 canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
     if (!gameRunning) return;
@@ -452,16 +454,7 @@ canvas.addEventListener('touchstart', (e) => {
     
     isTouching = true;
     touchStartY = touchY;
-    // Mover la barra inmediatamente al tocar
-    player.y = touchY - player.height / 2;
-    
-    // Limitar a los bordes del canvas
-    if (player.y < 0) {
-        player.y = 0;
-    }
-    if (player.y + player.height > canvas.height) {
-        player.y = canvas.height - player.height;
-    }
+    playerStartY = player.y;
 }, { passive: false });
 
 canvas.addEventListener('touchmove', (e) => {
@@ -472,8 +465,14 @@ canvas.addEventListener('touchmove', (e) => {
     const rect = canvas.getBoundingClientRect();
     const touchY = touch.clientY - rect.top;
     
-    // Mover la barra directamente a la posición del dedo
-    player.y = touchY - player.height / 2;
+    // Calcular el movimiento del dedo
+    const deltaY = touchY - touchStartY;
+    
+    // Aplicar sensibilidad amplificada
+    const amplifiedDelta = deltaY * touchSensitivity;
+    
+    // Mover la barra con el delta amplificado
+    player.y = playerStartY + amplifiedDelta;
     
     // Limitar a los bordes del canvas
     if (player.y < 0) {
@@ -482,9 +481,6 @@ canvas.addEventListener('touchmove', (e) => {
     if (player.y + player.height > canvas.height) {
         player.y = canvas.height - player.height;
     }
-    
-    // Actualizar touchStartY para el siguiente frame
-    touchStartY = touchY;
 }, { passive: false });
 
 canvas.addEventListener('touchend', (e) => {
