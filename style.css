@@ -126,20 +126,21 @@ body {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    width: 12px;
-    height: 12px;
-    background: rgba(0, 255, 136, 0.5);
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.8) 0%, rgba(0, 204, 106, 0.8) 100%);
     border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 255, 136, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.6);
     cursor: pointer;
     touch-action: none;
     transition: all 0.2s ease;
 }
 
 .slider-knob:active {
-    background: rgba(0, 255, 136, 0.7);
-    box-shadow: 0 2px 6px rgba(0, 255, 136, 0.4);
+    background: linear-gradient(135deg, rgba(0, 255, 136, 1) 0%, rgba(0, 204, 106, 1) 100%);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.6);
+    transform: translateX(-50%) scale(1.1);
 }
 
 /* Mostrar slider solo en dispositivos táctiles */
@@ -346,8 +347,8 @@ body {
     }
     
     .slider-knob {
-        width: 10px;
-        height: 10px;
+        width: 32px;
+        height: 32px;
     }
     
     .controls {
@@ -429,8 +430,8 @@ body {
     }
     
     .slider-knob {
-        width: 8px;
-        height: 8px;
+        width: 28px;
+        height: 28px;
     }
     
     .btn {
@@ -504,8 +505,8 @@ body {
     }
     
     .slider-knob {
-        width: 6px;
-        height: 6px;
+        width: 25px;
+        height: 25px;
     }
 }
 
