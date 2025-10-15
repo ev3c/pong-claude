@@ -2,9 +2,70 @@
 const canvas = document.getElementById('pongCanvas');
 const ctx = canvas.getContext('2d');
 
-// Establecer el tamaño real del canvas
+// Variables de orientación
+let isPortrait = false;
+let canvasBaseWidth = 800;
+let canvasBaseHeight = 500;
+
+// Detectar orientación de pantalla
+function detectOrientation() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    return height > width; // true = vertical, false = horizontal
+}
+
+// Ajustar tamaño del canvas según orientación y tamaño de pantalla
+function adjustCanvasSize() {
+    isPortrait = detectOrientation();
+    
+    if (isTouchDevice()) {
+        const maxWidth = window.innerWidth * 0.95;
+        const maxHeight = window.innerHeight * 0.6; // Dejar espacio para controles
+        
+        if (isPortrait) {
+            // En modo vertical: canvas más estrecho y alto
+            canvasBaseWidth = Math.min(maxWidth, 600);
+            canvasBaseHeight = Math.min(maxHeight, 400);
+            console.log('📱 Modo Vertical detectado');
+        } else {
+            // En modo horizontal: canvas más ancho
+            canvasBaseWidth = Math.min(maxWidth, 800);
+            canvasBaseHeight = Math.min(maxHeight, 500);
+            console.log('📱 Modo Horizontal detectado');
+        }
+    } else {
+        // Desktop: tamaño fijo
+        canvasBaseWidth = 800;
+        canvasBaseHeight = 500;
+    }
+    
+    // Aplicar nuevo tamaño
+    const oldWidth = canvas.width;
+    const oldHeight = canvas.height;
+    canvas.width = canvasBaseWidth;
+    canvas.height = canvasBaseHeight;
+    
+    // Ajustar posiciones de elementos proporcionalmente
+    if (oldWidth !== canvasBaseWidth || oldHeight !== canvasBaseHeight) {
+        const widthRatio = canvasBaseWidth / oldWidth;
+        const heightRatio = canvasBaseHeight / oldHeight;
+        
+        player.x = canvasBaseWidth - 20;
+        player.y = (player.y * heightRatio);
+        computer.y = (computer.y * heightRatio);
+        ball.x = (ball.x * widthRatio);
+        ball.y = (ball.y * heightRatio);
+    }
+    
+    draw();
+}
+
+// Establecer el tamaño inicial del canvas
 canvas.width = 800;
 canvas.height = 500;
+
+// Ajustar al cargar
+setTimeout(() => adjustCanvasSize(), 100);
 
 // Elementos del DOM
 const playerScoreElement = document.getElementById('playerScore');
@@ -62,10 +123,15 @@ const isTouchDevice = () => {
 let computerErrorChance = 0.3; // 30% de probabilidad de error inicial en móviles
 let computerReactionDelay = 0;
 
+// Función para obtener posición inicial vertical centrada
+function getCenterY() {
+    return canvas.height / 2 - 35;
+}
+
 // Paleta del jugador (ahora a la derecha)
 const player = {
     x: canvas.width - 20,
-    y: canvas.height / 2 - 35,
+    y: getCenterY(),
     width: 10,
     height: 70,
     speed: 8,
@@ -75,7 +141,7 @@ const player = {
 // Paleta de la computadora (ahora a la izquierda)
 const computer = {
     x: 10,
-    y: canvas.height / 2 - 35,
+    y: getCenterY(),
     width: 10,
     height: 70,
     speed: 3 // Velocidad inicial baja
@@ -88,7 +154,8 @@ const ball = {
     radius: 8,
     speed: 5,
     dx: 5,
-    dy: 5
+    dy: 5,
+    paused: false // Control de pausa entre puntos
 };
 
 // Funciones de Audio
@@ -327,6 +394,9 @@ function moveComputer() {
 
 // Mover la pelota
 function moveBall() {
+    // No mover la pelota si está pausada
+    if (ball.paused) return;
+    
     ball.x += ball.dx;
     ball.y += ball.dy;
     
@@ -378,8 +448,12 @@ function moveBall() {
     if (ball.x - ball.radius < 0) {
         playerScore++;
         updateScore();
-        resetBall();
         playScore();
+        resetBall(); // Resetear inmediatamente al centro
+        ball.paused = true; // Pero mantenerla pausada
+        setTimeout(() => {
+            ball.paused = false; // Después de 250ms, permitir que se mueva
+        }, 250);
         checkWinner();
     }
     
@@ -387,8 +461,12 @@ function moveBall() {
     if (ball.x + ball.radius > canvas.width) {
         computerScore++;
         updateScore();
-        resetBall();
         playScore();
+        resetBall(); // Resetear inmediatamente al centro
+        ball.paused = true; // Pero mantenerla pausada
+        setTimeout(() => {
+            ball.paused = false; // Después de 250ms, permitir que se mueva
+        }, 250);
         checkWinner();
     }
 }
@@ -400,6 +478,7 @@ function resetBall() {
     ball.speed = 5;
     ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
     ball.dy = (Math.random() - 0.5) * ball.speed;
+    // La pelota se coloca en el centro con dirección, pero ball.paused controla si se mueve
 }
 
 // Actualizar puntuación
@@ -498,9 +577,11 @@ function resetGame() {
     
     updateScore();
     
-    player.y = canvas.height / 2 - 35;
-    computer.y = canvas.height / 2 - 35;
+    player.x = canvas.width - 20;
+    player.y = getCenterY();
+    computer.y = getCenterY();
     resetBall();
+    ball.paused = false; // Asegurar que no esté pausada
     
     startButton.textContent = 'Iniciar Juego';
     draw();
@@ -639,9 +720,11 @@ playAgainButton.addEventListener('click', () => {
     playerScore = 0;
     computerScore = 0;
     updateScore();
-    player.y = canvas.height / 2 - 35;
-    computer.y = canvas.height / 2 - 35;
+    player.x = canvas.width - 20;
+    player.y = getCenterY();
+    computer.y = getCenterY();
     resetBall();
+    ball.paused = false; // Asegurar que no esté pausada
     startGame();
 });
 
@@ -662,6 +745,22 @@ soundToggle.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
     soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
     soundToggle.setAttribute('title', soundEnabled ? 'Desactivar efectos' : 'Activar efectos');
+});
+
+// Event listeners para cambio de orientación
+window.addEventListener('orientationchange', () => {
+    console.log('🔄 Cambio de orientación detectado');
+    setTimeout(() => {
+        adjustCanvasSize();
+        updateSliderPosition();
+    }, 100);
+});
+
+window.addEventListener('resize', () => {
+    if (isTouchDevice()) {
+        adjustCanvasSize();
+        updateSliderPosition();
+    }
 });
 
 // Dibujar estado inicial
