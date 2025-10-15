@@ -418,8 +418,9 @@ function moveBall() {
         ball.dx = -Math.abs(ball.dx);
         ball.dy = ball.speed * Math.sin(angle);
         
-        // Aumentar ligeramente la velocidad
-        ball.speed *= 1.05;
+        // Aumentar ligeramente la velocidad (menos en móviles)
+        const speedIncrease = isTouchDevice() ? 1.02 : 1.05;
+        ball.speed *= speedIncrease;
         ball.dx = -ball.speed * Math.cos(angle);
         
         playPaddleHit();
@@ -437,8 +438,9 @@ function moveBall() {
         ball.dx = Math.abs(ball.dx);
         ball.dy = ball.speed * Math.sin(angle);
         
-        // Aumentar ligeramente la velocidad
-        ball.speed *= 1.05;
+        // Aumentar ligeramente la velocidad (menos en móviles)
+        const speedIncrease = isTouchDevice() ? 1.02 : 1.05;
+        ball.speed *= speedIncrease;
         ball.dx = ball.speed * Math.cos(angle);
         
         playPaddleHit();
@@ -475,7 +477,8 @@ function moveBall() {
 function resetBall() {
     ball.x = canvas.width / 2;
     ball.y = canvas.height / 2;
-    ball.speed = 5;
+    // Velocidad más lenta en dispositivos móviles
+    ball.speed = isTouchDevice() ? 3.5 : 5;
     ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
     ball.dy = (Math.random() - 0.5) * ball.speed;
     // La pelota se coloca en el centro con dirección, pero ball.paused controla si se mueve
