@@ -19,19 +19,19 @@ function adjustCanvasSize() {
     isPortrait = detectOrientation();
     
     if (isTouchDevice()) {
-        const maxWidth = window.innerWidth * 0.95;
-        const maxHeight = window.innerHeight * 0.6; // Dejar espacio para controles
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
         
         if (isPortrait) {
-            // En modo vertical: canvas más estrecho y alto
-            canvasBaseWidth = Math.min(maxWidth, 600);
-            canvasBaseHeight = Math.min(maxHeight, 400);
-            console.log('📱 Modo Vertical detectado');
+            // En modo vertical: usar casi todo el ancho, proporcional en altura
+            canvasBaseWidth = Math.floor(screenWidth * 0.95);
+            canvasBaseHeight = Math.floor(screenHeight * 0.55); // Espacio para controles
+            console.log('📱 Modo Vertical detectado:', canvasBaseWidth, 'x', canvasBaseHeight);
         } else {
-            // En modo horizontal: canvas más ancho
-            canvasBaseWidth = Math.min(maxWidth, 800);
-            canvasBaseHeight = Math.min(maxHeight, 500);
-            console.log('📱 Modo Horizontal detectado');
+            // En modo horizontal: usar todo el ancho disponible
+            canvasBaseWidth = Math.floor(screenWidth * 0.98);
+            canvasBaseHeight = Math.floor(screenHeight * 0.65); // Más altura en horizontal
+            console.log('📱 Modo Horizontal detectado:', canvasBaseWidth, 'x', canvasBaseHeight);
         }
     } else {
         // Desktop: tamaño fijo
@@ -44,6 +44,11 @@ function adjustCanvasSize() {
     const oldHeight = canvas.height;
     canvas.width = canvasBaseWidth;
     canvas.height = canvasBaseHeight;
+    
+    // Ajustar altura del slider táctil si existe
+    if (touchSlider && isTouchDevice()) {
+        touchSlider.style.height = canvasBaseHeight + 'px';
+    }
     
     // Ajustar posiciones de elementos proporcionalmente
     if (oldWidth !== canvasBaseWidth || oldHeight !== canvasBaseHeight) {
