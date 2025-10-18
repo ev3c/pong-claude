@@ -7,6 +7,20 @@ let isPortrait = false;
 let canvasBaseWidth = 800;
 let canvasBaseHeight = 500;
 
+// Intentar forzar orientación horizontal en dispositivos móviles
+function forceHorizontalOrientation() {
+    if (isTouchDevice() && screen.orientation) {
+        try {
+            // Intentar bloquear la orientación en modo landscape
+            screen.orientation.lock('landscape').catch(err => {
+                console.log('No se pudo bloquear la orientación:', err);
+            });
+        } catch (e) {
+            console.log('Screen Orientation API no disponible:', e);
+        }
+    }
+}
+
 // Detectar orientación de pantalla
 function detectOrientation() {
     const width = window.innerWidth;
@@ -28,10 +42,31 @@ function adjustCanvasSize() {
             canvasBaseHeight = Math.floor(screenHeight * 0.55); // Espacio para controles
             console.log('📱 Modo Vertical detectado:', canvasBaseWidth, 'x', canvasBaseHeight);
         } else {
-            // En modo horizontal: usar todo el ancho disponible
-            canvasBaseWidth = Math.floor(screenWidth * 0.98);
-            canvasBaseHeight = Math.floor(screenHeight * 0.65); // Más altura en horizontal
-            console.log('📱 Modo Horizontal detectado:', canvasBaseWidth, 'x', canvasBaseHeight);
+            // En modo horizontal: maximizar el uso de la pantalla
+            // Ajustar espacio según el tamaño de pantalla
+            let sliderWidth = 30;
+            let gapWidth = 5;
+            let bodyPadding = 4; // 2px * 2 lados
+            let containerPadding = 10; // 5px * 2 lados
+            
+            // Pantallas muy pequeñas (altura < 450px)
+            if (screenHeight < 450) {
+                sliderWidth = 25;
+                gapWidth = 3;
+                bodyPadding = 2; // 1px * 2
+                containerPadding = 6; // 3px * 2
+            }
+            
+            // Calcular espacio total ocupado por sliders y espacios
+            // Formato: [padding][gap][slider][gap][canvas][gap][slider][gap][padding]
+            const marginSafety = 10; // Margen de seguridad adicional
+            const sliderSpace = gameMode === 2 ? 
+                (sliderWidth * 2 + gapWidth * 2 + bodyPadding + containerPadding + marginSafety) : // 2 sliders
+                (sliderWidth + gapWidth * 2 + bodyPadding + containerPadding + marginSafety);      // 1 slider
+            
+            canvasBaseWidth = Math.floor(screenWidth - sliderSpace);
+            canvasBaseHeight = Math.floor(screenHeight * 0.82); // Usar 82% de la altura
+            console.log('📱 Modo Horizontal:', canvasBaseWidth, 'x', canvasBaseHeight, '| Ancho total:', canvasBaseWidth + sliderSpace, '/', screenWidth);
         }
     } else {
         // Desktop: tamaño fijo
@@ -616,10 +651,48 @@ function startGame() {
         audioContext.resume();
     }
     
+    // Intentar forzar orientación horizontal en móviles
+    forceHorizontalOrientation();
+    
     gameRunning = true;
     startButton.textContent = 'Pausar';
     startBackgroundMusic();
+    
+    // Centrar la pista en la pantalla
+    scrollToCanvas();
+    
     gameLoop();
+}
+
+// Función para centrar el canvas en la pantalla
+function scrollToCanvas() {
+    // Usar setTimeout para asegurar que el scroll se ejecuta después de que el DOM esté listo
+    setTimeout(() => {
+        // En dispositivos móviles, usar 'nearest' para evitar problemas con el teclado virtual
+        const scrollBehavior = isTouchDevice() ? 'nearest' : 'center';
+        
+        canvas.scrollIntoView({
+            behavior: 'smooth',
+            block: scrollBehavior,
+            inline: 'center'
+        });
+        
+        // En dispositivos móviles, hacer un scroll adicional para asegurar visibilidad completa
+        if (isTouchDevice()) {
+            setTimeout(() => {
+                const rect = canvas.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                
+                // Si el canvas no está completamente visible, ajustar
+                if (rect.bottom > viewportHeight || rect.top < 0) {
+                    window.scrollBy({
+                        top: rect.top - (viewportHeight - rect.height) / 2,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 200);
+        }
+    }, 100);
 }
 
 // Pausar juego
@@ -951,6 +1024,13 @@ function updateGameMode() {
         levelNumber.parentElement.style.opacity = '1';
     }
     
+    // Reajustar tamaño del canvas (importante en horizontal)
+    if (isTouchDevice()) {
+        adjustCanvasSize();
+        updateSliderPosition();
+        updateSliderPositionLeft();
+    }
+    
     // Si el juego está en marcha, reiniciarlo
     if (gameRunning) {
         pauseGame();
@@ -964,6 +1044,12 @@ window.addEventListener('orientationchange', () => {
     setTimeout(() => {
         adjustCanvasSize();
         updateSliderPosition();
+        updateSliderPositionLeft();
+        
+        // Centrar el canvas si el juego está en marcha
+        if (gameRunning) {
+            scrollToCanvas();
+        }
     }, 100);
 });
 
@@ -971,6 +1057,12 @@ window.addEventListener('resize', () => {
     if (isTouchDevice()) {
         adjustCanvasSize();
         updateSliderPosition();
+        updateSliderPositionLeft();
+        
+        // Centrar el canvas si el juego está en marcha
+        if (gameRunning) {
+            setTimeout(() => scrollToCanvas(), 300);
+        }
     }
 });
 
@@ -979,4 +1071,13 @@ draw();
 updateSliderPosition();
 updateSliderPositionLeft();
 updateGameMode();
+
+// Intentar forzar orientación horizontal al cargar
+if (isTouchDevice()) {
+    // Esperar a que el usuario interactúe con la página antes de intentar bloquear la orientación
+    document.addEventListener('click', function onFirstClick() {
+        forceHorizontalOrientation();
+        document.removeEventListener('click', onFirstClick);
+    }, { once: true });
+}
 

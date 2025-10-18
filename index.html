@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="screen-orientation" content="landscape">
+    <meta name="x5-orientation" content="landscape">
+    <meta name="full-screen" content="yes">
+    <meta name="x5-fullscreen" content="true">
     <title>Pong - Juego Clásico</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -77,6 +81,15 @@
                 <h2 id="gameOverText">¡Juego Terminado!</h2>
                 <p id="winnerText"></p>
                 <button id="playAgainButton" class="btn">Jugar de Nuevo</button>
+            </div>
+        </div>
+        
+        <!-- Overlay para pedir rotación en móviles -->
+        <div id="rotateOverlay" class="rotate-overlay">
+            <div class="rotate-content">
+                <div class="rotate-icon">📱 ↻</div>
+                <h2>Por favor, gira tu dispositivo</h2>
+                <p>Este juego se disfruta mejor en modo horizontal</p>
             </div>
         </div>
     </div>
