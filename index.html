@@ -30,12 +30,25 @@
             </div>
             
             <div class="game-area">
+                <!-- Barra de desplazamiento para móviles - Jugador 2 (izquierda) -->
+                <div id="touchSliderLeft" class="touch-slider touch-slider-left">
+                    <div id="sliderKnobLeft" class="slider-knob"></div>
+                </div>
+                
                 <canvas id="pongCanvas"></canvas>
                 
-                <!-- Barra de desplazamiento para móviles -->
+                <!-- Barra de desplazamiento para móviles - Jugador 1 (derecha) -->
                 <div id="touchSlider" class="touch-slider">
                     <div id="sliderKnob" class="slider-knob"></div>
                 </div>
+            </div>
+            
+            <div class="game-mode">
+                <label for="gameMode">Modo de juego:</label>
+                <select id="gameMode" class="mode-selector">
+                    <option value="1">1 Jugador (vs Computadora)</option>
+                    <option value="2">2 Jugadores</option>
+                </select>
             </div>
             
             <div class="controls">
@@ -50,10 +63,12 @@
             
             <div class="instructions">
                 <h3>Controles:</h3>
-                <p>⌨️ <strong>Teclado:</strong> Usa las teclas ↑ y ↓</p>
-                <p>🕹️ <strong>Móvil:</strong> Usa la barra de control al lado derecho de la pista</p>
+                <p>⌨️ <strong>Jugador 1 (derecha/verde):</strong> Usa las teclas ↑ y ↓</p>
+                <p>⌨️ <strong>Jugador 2 (izquierda/rojo):</strong> Usa las teclas W y S</p>
+                <p>📱 <strong>Móvil 1 Jugador:</strong> Toca el canvas o usa la barra de control derecha</p>
+                <p>📱 <strong>Móvil 2 Jugadores:</strong> Toca la mitad izquierda (J2) o derecha (J1) del canvas</p>
                 <p>🎵 <strong>Audio:</strong> Música de fondo y efectos de sonido activados</p>
-                <p>🎯 <strong>Objetivo:</strong> ¡Llega a 5 puntos para ganar y subir de nivel!</p>
+                <p>🎯 <strong>Objetivo:</strong> ¡Llega a 5 puntos para ganar!</p>
             </div>
         </div>
         

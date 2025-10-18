@@ -45,9 +45,12 @@ function adjustCanvasSize() {
     canvas.width = canvasBaseWidth;
     canvas.height = canvasBaseHeight;
     
-    // Ajustar altura del slider táctil si existe
+    // Ajustar altura de los sliders táctiles si existen
     if (touchSlider && isTouchDevice()) {
         touchSlider.style.height = canvasBaseHeight + 'px';
+    }
+    if (touchSliderLeft && isTouchDevice()) {
+        touchSliderLeft.style.height = canvasBaseHeight + 'px';
     }
     
     // Ajustar posiciones de elementos proporcionalmente
@@ -85,12 +88,17 @@ const musicToggle = document.getElementById('musicToggle');
 const soundToggle = document.getElementById('soundToggle');
 const touchSlider = document.getElementById('touchSlider');
 const sliderKnob = document.getElementById('sliderKnob');
+const touchSliderLeft = document.getElementById('touchSliderLeft');
+const sliderKnobLeft = document.getElementById('sliderKnobLeft');
 const levelNumber = document.getElementById('levelNumber');
+const gameModeSelect = document.getElementById('gameMode');
+const computerScoreLabel = document.querySelector('.computer-score .label');
 
 // Variables del juego
 let gameRunning = false;
 let animationId;
 let mouseY = canvas.height / 2;
+let gameMode = 1; // 1 = vs Computadora, 2 = 2 Jugadores
 
 // Sistema de Audio
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -99,14 +107,22 @@ let soundEnabled = true;
 let backgroundMusic = null;
 let musicGainNode = null;
 
-// Variables del control táctil
+// Variables del control táctil - Jugador 1 (derecha)
 let isTouching = false;
 let touchStartY = 0;
 let playerStartY = 0;
 const touchSensitivity = 2; // Multiplicador de sensibilidad (mayor = más sensible)
 
-// Variables del slider
+// Variables del slider - Jugador 1
 let isSliderActive = false;
+
+// Variables del control táctil - Jugador 2 (izquierda)
+let isTouchingLeft = false;
+let touchStartYLeft = 0;
+let computerStartY = 0;
+
+// Variables del slider - Jugador 2
+let isSliderActiveLeft = false;
 
 // Puntuaciones
 let playerScore = 0;
@@ -143,13 +159,14 @@ const player = {
     dy: 0
 };
 
-// Paleta de la computadora (ahora a la izquierda)
+// Paleta de la computadora / Jugador 2 (ahora a la izquierda)
 const computer = {
     x: 10,
     y: getCenterY(),
     width: 10,
     height: 70,
-    speed: 3 // Velocidad inicial baja
+    speed: 3, // Velocidad inicial baja
+    dy: 0 // Velocidad de movimiento para modo 2 jugadores
 };
 
 // Pelota
@@ -334,7 +351,7 @@ function movePlayer() {
     updateSliderPosition();
 }
 
-// Actualizar posición visual del slider knob
+// Actualizar posición visual del slider knob (Jugador 1)
 function updateSliderPosition() {
     if (!touchSlider) return;
     
@@ -349,8 +366,41 @@ function updateSliderPosition() {
     sliderKnob.style.top = knobY + 'px';
 }
 
-// IA de la computadora
+// Actualizar posición visual del slider knob izquierdo (Jugador 2)
+function updateSliderPositionLeft() {
+    if (!touchSliderLeft || gameMode !== 2) return;
+    
+    const sliderHeight = touchSliderLeft.offsetHeight;
+    const knobHeight = sliderKnobLeft.offsetHeight;
+    const maxY = sliderHeight - knobHeight;
+    
+    // Calcular posición del knob basada en la posición del jugador 2
+    const computerPercent = computer.y / (canvas.height - computer.height);
+    const knobY = computerPercent * maxY;
+    
+    sliderKnobLeft.style.top = knobY + 'px';
+}
+
+// IA de la computadora o control del Jugador 2
 function moveComputer() {
+    // En modo 2 jugadores, mover con controles manuales
+    if (gameMode === 2) {
+        computer.y += computer.dy;
+        
+        // Límites de la pantalla
+        if (computer.y < 0) {
+            computer.y = 0;
+        }
+        if (computer.y + computer.height > canvas.height) {
+            computer.y = canvas.height - computer.height;
+        }
+        
+        // Actualizar posición del slider knob izquierdo
+        updateSliderPositionLeft();
+        return;
+    }
+    
+    // Modo 1 jugador - IA de la computadora
     const computerCenter = computer.y + computer.height / 2;
     
     // En móviles, agregar errores y retrasos según el nivel
@@ -499,25 +549,39 @@ function updateScore() {
 function checkWinner() {
     if (playerScore >= winningScore) {
         playWin();
-        currentLevel++;
-        levelNumber.textContent = currentLevel;
-        const newSpeed = Math.min(computerBaseSpeed + (currentLevel - 1) * 0.5, 7);
-        computer.speed = newSpeed;
         
-        let message = `🎉 ¡Pasas al Nivel ${currentLevel}! `;
-        if (isTouchDevice()) {
-            message += 'La computadora será más rápida y cometerá menos errores 🚀';
+        if (gameMode === 2) {
+            // Modo 2 jugadores
+            endGame('¡Jugador 1 Gana!', '🎉 ¡Felicidades! El Jugador 1 (derecha/verde) ha ganado la partida.');
         } else {
-            message += 'La computadora será más rápida 🚀';
+            // Modo 1 jugador - avanzar de nivel
+            currentLevel++;
+            levelNumber.textContent = currentLevel;
+            const newSpeed = Math.min(computerBaseSpeed + (currentLevel - 1) * 0.5, 7);
+            computer.speed = newSpeed;
+            
+            let message = `🎉 ¡Pasas al Nivel ${currentLevel}! `;
+            if (isTouchDevice()) {
+                message += 'La computadora será más rápida y cometerá menos errores 🚀';
+            } else {
+                message += 'La computadora será más rápida 🚀';
+            }
+            
+            endGame(
+                `¡Nivel ${currentLevel - 1} Completado!`, 
+                message
+            );
         }
-        
-        endGame(
-            `¡Nivel ${currentLevel - 1} Completado!`, 
-            message
-        );
     } else if (computerScore >= winningScore) {
         playLose();
-        endGame('¡Juego Terminado!', `😔 Perdiste en el Nivel ${currentLevel}. ¡Inténtalo de nuevo!`);
+        
+        if (gameMode === 2) {
+            // Modo 2 jugadores
+            endGame('¡Jugador 2 Gana!', '🎉 ¡Felicidades! El Jugador 2 (izquierda/rojo) ha ganado la partida.');
+        } else {
+            // Modo 1 jugador
+            endGame('¡Juego Terminado!', `😔 Perdiste en el Nivel ${currentLevel}. ¡Inténtalo de nuevo!`);
+        }
     }
 }
 
@@ -607,6 +671,7 @@ function resetGame() {
 
 // Control con teclado
 document.addEventListener('keydown', (e) => {
+    // Jugador 1 (derecha) - Flechas
     if (e.key === 'ArrowUp') {
         e.preventDefault(); // Prevenir el scroll de la página
         player.dy = -player.speed;
@@ -614,12 +679,32 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault(); // Prevenir el scroll de la página
         player.dy = player.speed;
     }
+    
+    // Jugador 2 (izquierda) - W y S (solo en modo 2 jugadores)
+    if (gameMode === 2) {
+        if (e.key === 'w' || e.key === 'W') {
+            e.preventDefault();
+            computer.dy = -player.speed; // Usar la misma velocidad que el jugador
+        } else if (e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            computer.dy = player.speed;
+        }
+    }
 });
 
 document.addEventListener('keyup', (e) => {
+    // Jugador 1 (derecha)
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault(); // Prevenir el scroll de la página
         player.dy = 0;
+    }
+    
+    // Jugador 2 (izquierda) - solo en modo 2 jugadores
+    if (gameMode === 2) {
+        if (e.key === 'w' || e.key === 'W' || e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            computer.dy = 0;
+        }
     }
 });
 
@@ -630,43 +715,80 @@ canvas.addEventListener('touchstart', (e) => {
     
     const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
+    const touchX = touch.clientX - rect.left;
     const touchY = touch.clientY - rect.top;
     
-    isTouching = true;
-    touchStartY = touchY;
-    playerStartY = player.y;
+    // Determinar si el toque es en la mitad izquierda o derecha
+    if (gameMode === 2 && touchX < canvas.width / 2) {
+        // Toque en la mitad izquierda - controlar jugador 2
+        isTouchingLeft = true;
+        touchStartYLeft = touchY;
+        computerStartY = computer.y;
+    } else {
+        // Toque en la mitad derecha (o cualquier lado en modo 1 jugador) - controlar jugador 1
+        isTouching = true;
+        touchStartY = touchY;
+        playerStartY = player.y;
+    }
 }, { passive: false });
 
 canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
-    if (!isTouching || !gameRunning) return;
+    if (!gameRunning) return;
     
     const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
     const touchY = touch.clientY - rect.top;
     
-    // Calcular el movimiento del dedo
-    const deltaY = touchY - touchStartY;
-    
-    // Aplicar sensibilidad amplificada
-    const amplifiedDelta = deltaY * touchSensitivity;
-    
-    // Mover la barra con el delta amplificado
-    player.y = playerStartY + amplifiedDelta;
-    
-    // Limitar a los bordes del canvas
-    if (player.y < 0) {
-        player.y = 0;
+    // Mover jugador 1 (derecha)
+    if (isTouching) {
+        // Calcular el movimiento del dedo
+        const deltaY = touchY - touchStartY;
+        
+        // Aplicar sensibilidad amplificada
+        const amplifiedDelta = deltaY * touchSensitivity;
+        
+        // Mover la barra con el delta amplificado
+        player.y = playerStartY + amplifiedDelta;
+        
+        // Limitar a los bordes del canvas
+        if (player.y < 0) {
+            player.y = 0;
+        }
+        if (player.y + player.height > canvas.height) {
+            player.y = canvas.height - player.height;
+        }
     }
-    if (player.y + player.height > canvas.height) {
-        player.y = canvas.height - player.height;
+    
+    // Mover jugador 2 (izquierda) - solo en modo 2 jugadores
+    if (isTouchingLeft && gameMode === 2) {
+        // Calcular el movimiento del dedo
+        const deltaY = touchY - touchStartYLeft;
+        
+        // Aplicar sensibilidad amplificada
+        const amplifiedDelta = deltaY * touchSensitivity;
+        
+        // Mover la barra con el delta amplificado
+        computer.y = computerStartY + amplifiedDelta;
+        
+        // Limitar a los bordes del canvas
+        if (computer.y < 0) {
+            computer.y = 0;
+        }
+        if (computer.y + computer.height > canvas.height) {
+            computer.y = canvas.height - computer.height;
+        }
     }
 }, { passive: false });
 
 canvas.addEventListener('touchend', (e) => {
     e.preventDefault();
     isTouching = false;
+    isTouchingLeft = false;
     player.dy = 0;
+    if (gameMode === 2) {
+        computer.dy = 0;
+    }
 }, { passive: false });
 
 // Control del slider táctil
@@ -709,7 +831,46 @@ document.addEventListener('touchmove', (e) => {
 
 document.addEventListener('touchend', () => {
     isSliderActive = false;
+    isSliderActiveLeft = false;
 });
+
+// Control del slider táctil izquierdo (Jugador 2)
+sliderKnobLeft.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!gameRunning || gameMode !== 2) return;
+    
+    isSliderActiveLeft = true;
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+    if (!isSliderActiveLeft || !gameRunning || gameMode !== 2) return;
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const sliderRect = touchSliderLeft.getBoundingClientRect();
+    const touchY = touch.clientY - sliderRect.top;
+    
+    // Calcular posición del jugador 2 basada en la posición del toque en el slider
+    const sliderHeight = touchSliderLeft.offsetHeight;
+    const knobHeight = sliderKnobLeft.offsetHeight;
+    const maxY = sliderHeight - knobHeight;
+    
+    // Limitar touchY dentro del slider
+    const clampedY = Math.max(0, Math.min(touchY - knobHeight / 2, maxY));
+    
+    // Calcular posición del jugador 2
+    const percent = clampedY / maxY;
+    computer.y = percent * (canvas.height - computer.height);
+    
+    // Limitar al canvas
+    if (computer.y < 0) computer.y = 0;
+    if (computer.y + computer.height > canvas.height) {
+        computer.y = canvas.height - computer.height;
+    }
+    
+    updateSliderPositionLeft();
+}, { passive: false });
 
 // Botones
 startButton.addEventListener('click', () => {
@@ -755,6 +916,48 @@ soundToggle.addEventListener('click', () => {
     soundToggle.setAttribute('title', soundEnabled ? 'Desactivar efectos' : 'Activar efectos');
 });
 
+// Listener para cambio de modo de juego
+gameModeSelect.addEventListener('change', (e) => {
+    gameMode = parseInt(e.target.value);
+    updateGameMode();
+});
+
+// Función para actualizar la interfaz según el modo de juego
+function updateGameMode() {
+    if (gameMode === 2) {
+        // Modo 2 jugadores
+        computerScoreLabel.textContent = 'Jugador 2';
+        
+        // Mostrar slider izquierdo en dispositivos táctiles
+        if (isTouchDevice() && touchSliderLeft) {
+            touchSliderLeft.style.display = 'flex';
+        }
+        
+        // Reiniciar velocidad del jugador 2 para que sea igual al jugador 1
+        computer.dy = 0;
+        
+        // Ocultar indicador de nivel (no aplica en modo 2 jugadores)
+        levelNumber.parentElement.style.opacity = '0.3';
+    } else {
+        // Modo 1 jugador (vs Computadora)
+        computerScoreLabel.textContent = 'Computadora';
+        
+        // Ocultar slider izquierdo
+        if (touchSliderLeft) {
+            touchSliderLeft.style.display = 'none';
+        }
+        
+        // Mostrar indicador de nivel
+        levelNumber.parentElement.style.opacity = '1';
+    }
+    
+    // Si el juego está en marcha, reiniciarlo
+    if (gameRunning) {
+        pauseGame();
+        resetGame();
+    }
+}
+
 // Event listeners para cambio de orientación
 window.addEventListener('orientationchange', () => {
     console.log('🔄 Cambio de orientación detectado');
@@ -774,4 +977,6 @@ window.addEventListener('resize', () => {
 // Dibujar estado inicial
 draw();
 updateSliderPosition();
+updateSliderPositionLeft();
+updateGameMode();
 

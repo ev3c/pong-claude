@@ -122,6 +122,21 @@ body {
     flex-shrink: 0;
 }
 
+.touch-slider-left {
+    background: rgba(255, 71, 87, 0.2);
+    border: 2px solid rgba(255, 71, 87, 0.4);
+}
+
+.touch-slider-left .slider-knob {
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.8) 0%, rgba(204, 57, 70, 0.8) 100%);
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
+}
+
+.touch-slider-left .slider-knob:active {
+    background: linear-gradient(135deg, rgba(255, 71, 87, 1) 0%, rgba(204, 57, 70, 1) 100%);
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.6);
+}
+
 .slider-knob {
     position: absolute;
     left: 50%;
@@ -152,6 +167,43 @@ body {
     }
 }
 
+
+.game-mode {
+    text-align: center;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.game-mode label {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #667eea;
+    margin-right: 10px;
+}
+
+.mode-selector {
+    padding: 8px 15px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-selector:hover {
+    border-color: #764ba2;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.mode-selector:focus {
+    outline: none;
+    border-color: #764ba2;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
 
 .controls {
     display: flex;
