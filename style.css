@@ -598,12 +598,17 @@ body {
         box-sizing: border-box;
     }
     
+    .score-board {
+        margin-bottom: 8px;
+        margin-top: auto;
+    }
+    
     .game-area {
         max-width: 100%;
         width: 100%;
         gap: 5px;
         box-sizing: border-box;
-        margin-top: auto;
+        margin-top: 0;
         margin-bottom: 5px;
     }
     
