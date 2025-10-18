@@ -21,6 +21,30 @@ function forceHorizontalOrientation() {
     }
 }
 
+// Función para ocultar la barra de URL del navegador en móviles
+function hideAddressBar() {
+    if (!isTouchDevice()) return;
+    
+    // Método 1: Scroll para ocultar la barra
+    setTimeout(() => {
+        window.scrollTo(0, 1);
+        // Volver a scroll 0 para posicionamiento correcto
+        setTimeout(() => {
+            window.scrollTo(0, 0);
+        }, 10);
+    }, 100);
+    
+    // Método 2: Solicitar pantalla completa (si está disponible)
+    if (document.documentElement.requestFullscreen) {
+        document.addEventListener('click', function requestFullScreen() {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log('No se pudo entrar en pantalla completa:', err);
+            });
+            document.removeEventListener('click', requestFullScreen);
+        }, { once: true });
+    }
+}
+
 // Detectar orientación de pantalla
 function detectOrientation() {
     const width = window.innerWidth;
@@ -654,6 +678,9 @@ function startGame() {
     // Intentar forzar orientación horizontal en móviles
     forceHorizontalOrientation();
     
+    // Ocultar la barra de URL
+    hideAddressBar();
+    
     gameRunning = true;
     startButton.textContent = 'Pausar';
     startBackgroundMusic();
@@ -1046,6 +1073,9 @@ window.addEventListener('orientationchange', () => {
         updateSliderPosition();
         updateSliderPositionLeft();
         
+        // Ocultar barra de URL
+        hideAddressBar();
+        
         // Centrar el canvas si el juego está en marcha
         if (gameRunning) {
             scrollToCanvas();
@@ -1072,11 +1102,33 @@ updateSliderPosition();
 updateSliderPositionLeft();
 updateGameMode();
 
+// Ocultar barra de URL al cargar la página
+if (isTouchDevice()) {
+    // Ejecutar después de que la página cargue completamente
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            hideAddressBar();
+        }, 500);
+    });
+    
+    // También al hacer scroll hacia arriba (comportamiento común en móviles)
+    let lastScrollTop = 0;
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        if (scrollTop < lastScrollTop) {
+            // Scroll hacia arriba - ocultar barra
+            hideAddressBar();
+        }
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+    }, { passive: true });
+}
+
 // Intentar forzar orientación horizontal al cargar
 if (isTouchDevice()) {
     // Esperar a que el usuario interactúe con la página antes de intentar bloquear la orientación
     document.addEventListener('click', function onFirstClick() {
         forceHorizontalOrientation();
+        hideAddressBar();
         document.removeEventListener('click', onFirstClick);
     }, { once: true });
 }
